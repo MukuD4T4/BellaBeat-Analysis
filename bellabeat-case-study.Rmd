@@ -1,0 +1,196 @@
+## 1. Summery
+Bellabeat is a high-tech company that manufactures health-focused smart products.Collecting data on activity, sleep, stress, and reproductive health has allowed Bellabeat to empower women with knowledge about their own health and habits. Since it was founded in 2013, Bellabeat has grown rapidly and quickly positioned itself as a tech-driven wellness company for women.
+
+
+## 2. Ask
+### 2.1 Business Task
+The company's stakeholder has asked us to analyze smart device usage data in order to gain insight into how consumers use non-Bellabeat smart devices. 
+
+### 2.2 Guiding Questions
+
+**Q1. What is the problem you are trying to solve?**  
+*We are trying to find out trends of non-bellabeat customers in respect of using smart products.*  
+**Q2. How can your insights drive business decisions?**  
+*The insights will help the marketing team to make a customized marketing strategy for the company.*
+
+** Deliverables** 
+*Customer insights on using non-bellabeat products to help the marketing team in formation of a strong marketing strategy.*
+
+## 3. Prepare
+### 3.1 Guiding questions
+
+**Q1. Where is your data stored?**  
+*I have uploaded the data on R studio cloud in the relevant project. Moreover the data is also available on https://www.kaggle.com/arashnic/fitbit*
+
+**Q2. How is the data organized?**
+*The data is organized in tabular form.*  
+
+**Q3. Is it in long or wide format?** 
+*It is in the long format.*  
+
+**Q4. Are there issues with bias or credibility in this data?**  
+*After considering a collection of random sample and careful analysis we came to a conclusion that there is no bias.*   
+
+**Q5. How did you verify the data’s integrity?**  
+*To verify data integrity we make sure we had a copy of our database as well.*  
+
+**Q6. How does it help you answer your question?**  
+*On careful analysis the data can be used to come at a conclusion which can be used for making the strategy.*  
+
+### 3.2 Key Tasks  
+  
+#### i) Downloading the data and storing it.  
+Loading the packages.  
+```{r message=FALSE, results='hide'}  
+
+ 
+library("tidyverse")  
+library("dplyr")  
+library("lubridate")  
+library("ggplot2")  
+library("tidyr")  
+```
+Reading the files.  
+```{r Reading Files, results='hide'}
+activity <- read.csv("../input/fitbit/Fitabase Data 4.12.16-5.12.16/dailyActivity_merged.csv")  
+calories <- read.csv("../input/fitbit/Fitabase Data 4.12.16-5.12.16/dailyCalories_merged.csv")  
+intensities <- read.csv("../input/fitbit/Fitabase Data 4.12.16-5.12.16/dailyIntensities_merged.csv")  
+heartrate <- read.csv("../input/fitbit/Fitabase Data 4.12.16-5.12.16/heartrate_seconds_merged.csv")  
+step <- read.csv("../input/fitbit/Fitabase Data 4.12.16-5.12.16/dailySteps_merged.csv")  
+hourly_steps <- read_csv("../input/fitbit/Fitabase Data 4.12.16-5.12.16//hourlySteps_merged.csv",show_col_types = FALSE)  
+```
+
+Next step I did was to identify and sort the data into more meaningful pattern.
+I have hidden out the code and output because it was consuming too much space.
+  
+## 4. Process  
+So for cleaning and processing the table we used R language.
+### Cleaning and manipulating the activity table.  
+1. Finding missing values  
+2. Finding Duplicates  
+3. Renaming Activitydate column to date and changing it's datatype  
+4. Combining all the active minutes into one column  
+5. Creating weekdays columns 
+
+```{r Activity Table,results='hide'}
+sum(is.na(activity))
+
+sum(duplicated(activity))
+
+colnames(activity)[colnames(activity)=="ActivityDate"] <- "Date"
+activity$Date <- as.Date(activity$Date, format='%m/%d/%Y')
+
+
+activity <- activity %>% 
+  mutate(TotalActiveMin=VeryActiveMinutes+FairlyActiveMinutes+LightlyActiveMinutes)
+
+ 
+activity$WeekDays<- wday(activity$Date,label = TRUE, abbr = FALSE)
+
+```
+### Cleaning and manipulating the calories table.  
+1. Finding missing values  
+2. Finding Duplicates  
+3. Renaming Activitydate column to date and changing it's datatype  
+4. Creating weekdays columns 
+
+```{r Calories table, results='hide'}
+sum(is.na(calories))  
+sum(duplicated(calories))  
+colnames(calories)[colnames(calories)=="ActivityDay"] <- "Date"
+calories$Date <- as.Date(calories$Date, format='%m/%d/%Y')  
+
+```
+### Cleaning and manipulating the step table.  
+1. Finding missing values  
+2. Finding Duplicates  
+3. Renaming Activitydate column to date and changing it's datatype  
+4. Creating weekdays columns
+```{r Step Table}
+sum(is.na(step))  
+sum(duplicated(step))  
+colnames(step)[colnames(step)=="ActivityDay"] <- "Date"
+step$Date <- as.Date(step$Date, format= '%m/%d/%Y' )  
+step$WeekDays<- wday(step$Date,label = TRUE, abbr = FALSE)  
+
+```
+### Cleaning and manipulating the intensities table  
+1. Finding missing values  
+2. Finding Duplicates  
+3. Combining all the activities as one  
+4. Adding a column named TotalDistance by adding each type of distance 
+```{r Intensities Table}
+sum(is.na(intensities))
+
+sum(duplicated(intensities))
+
+intensities <- intensities %>%
+  mutate(TotalActiveMin=VeryActiveMinutes+FairlyActiveMinutes+LightlyActiveMinutes)
+
+intensities <- intensities %>%
+  mutate(TotalDistance=VeryActiveDistance+SedentaryActiveDistance+ModeratelyActiveDistance+LightActiveDistance)
+
+```
+## 5. Analyze and Share
+
+### 5.1 Sedentary minutes distribution  
+```{r}
+ggplot(activity)+
+  geom_histogram(aes(x=SedentaryMinutes,y=..density..),binwidth = 100, alpha=0.8,fill="purple")+
+  geom_vline(aes(xintercept=mean(SedentaryMinutes,na.rm=T)),color="orange",linetype="dotted")+
+  labs(title = "Sedentary Distribution(in Minutes)",x = "Sedentary Minutes", y= "Density")+
+  theme(plot.title = element_text(size=16),text=element_text(size=10))+theme_grey()
+```
+As we can see in the graph, The average sedentary minutes is close to 909 which is 15.15 hours.We can easily notice that we have large amount of sedentary data.  
+
+### 5.2 High intensity activity Vs Calories burn  
+```{r}
+ggplot(data=activity)+
+  geom_smooth(mapping=aes(x=TotalActiveMin,y=Calories))+
+  geom_point(mapping=aes(x=TotalActiveMin,y=Calories),color="blue",alpha=0.2)+
+  labs(title = "High intensity activity Vs Calories burn", x="High Intensity Minutes",y="Calories")
+```
+The plot chart shows the positive correlation between High intensity activity and calories burned. The more high intensity workout is done, the more calories are burned.  
+And also we can notice that Most of the entries state that people tend to do high intensity workouts for 250 to 350 minutes.
+
+### 5.3 Distance vs calories burned    
+```{r}
+ggplot(data=activity)+
+  geom_smooth(mapping=aes(x=TotalDistance,y=Calories))+
+  geom_point(mapping=aes(x=TotalDistance,y=Calories),color="blue",alpha=0.1)+
+  labs(title = "Total Distance Vs Calories burn", x="Distance",y="Calories")
+```  
+The plot chart shows the positive correlation between Distance and calories burned. The more distance is traveled, the more calories are burned.  
+
+### 5.4 Total Steps recored in terms of hour.  
+```{r}
+hourly_steps <- hourly_steps %>%
+  separate(ActivityHour, into = c("date", "time"), sep= " ") %>%
+  mutate(date = mdy(date)) 
+head(hourly_steps)
+hourly_steps %>%
+  group_by(time) %>%
+  summarize(average_steps = mean(StepTotal)) %>%
+  ggplot() +
+  geom_col(mapping = aes(x=time, y = average_steps, fill = average_steps)) + 
+  labs(title = "Hourly steps throughout the day", x="Hours", y="Average Steps") + 
+  scale_fill_gradient(low = "skyblue", high = "red")+
+  theme(axis.text.x = element_text(angle = 90))
+```
+The graph shows us that the least activity is shown between 3 PM to 4 PM.
+And the graph also shows that people generally walk the most at between 6 PM to & 7 PM. 
+
+
+## 6. Act
+#### 6.1 Guiding questions  
+**Q1. What is your final conclusion based on your analysis?**  
+*From the graphs we can see that people are indulged in many physical activities and ther are also using the watch to keep a track.*   
+
+**Q2. How could your team and business apply your insights?**  
+*The marketing team can show the ads when the customers are free. With the help of graph we can see that the customers are taking the least average steps between 3 PM to 4 Pm. And from 6 to 9 PM the marketing team can target only specific customers.*  
+
+**Q2. What next steps would you or your stakeholders take based on your findings?**   
+*We can bring various competition like awarding the customer having the least sedentary time or awarding the customer having maximum high intensity minutes on weekly or monthly basis to encourage them to use the watch as much as possible and at the same time stay fit.*  
+**Q3. Is there additional data you could use to expand on your findings?**  
+*Yes, We can ask for customer's feedback and start collecting more data like mensuration cycle, Their medical condition.* 
+
